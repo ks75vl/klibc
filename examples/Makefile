@@ -6,7 +6,7 @@
 
 all: lib
 	gcc -o example.o -I../include -DKLIBC_LOG_LEVEL_ALL=1 -c example.c
-	gcc -o example example.o log.o
+	gcc -o example.out example.o log.o
 
 lib:
 	gcc -o log.o -I../include -c ../src/log.c
