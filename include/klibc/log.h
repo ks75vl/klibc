@@ -11,13 +11,15 @@
 #include <stdint.h>
 
 #define _KLIBC_LOG_LEVEL_ERROR    0
-#define _KLIBC_LOG_LEVEL_INFO     1
-#define _KLIBC_LOG_LEVEL_DEBUG    2
-#define _KLIBC_LOG_LEVEL_DEBUGNTS 3
-#define _KLIBC_LOG_LEVEL_ALL      4
+#define _KLIBC_LOG_LEVEL_WARNING  1
+#define _KLIBC_LOG_LEVEL_INFO     2
+#define _KLIBC_LOG_LEVEL_DEBUG    3
+#define _KLIBC_LOG_LEVEL_DEBUGNTS 4
+#define _KLIBC_LOG_LEVEL_ALL      5
 
 typedef enum klibc_log_level {
     KLIBC_LOG_ERROR    = _KLIBC_LOG_LEVEL_ERROR,
+    KLIBC_LOG_WARNING  = _KLIBC_LOG_LEVEL_WARNING,
     KLIBC_LOG_INFO     = _KLIBC_LOG_LEVEL_INFO,
     KLIBC_LOG_DEBUG    = _KLIBC_LOG_LEVEL_DEBUG,
     KLIBC_LOG_DEBUGNTS = _KLIBC_LOG_LEVEL_DEBUGNTS,
@@ -87,8 +89,8 @@ typedef int (*printf_func)(const char *format, ...);
 #define _KLIBC_LOG_RESET_COLOR  "\033[m"
 #define _KLIBC_LOG_COLOR_E      _KLIBC_LOG_COLOR(_KLIBC_LOG_COLOR_RED)
 #define _KLIBC_LOG_COLOR_W      _KLIBC_LOG_COLOR(_KLIBC_LOG_COLOR_BROWN)
-#define _KLIBC_LOG_COLOR_I      _KLIBC_LOG_COLOR(_KLIBC_LOG_COLOR_GREEN)
-#define _KLIBC_LOG_COLOR_D
+#define _KLIBC_LOG_COLOR_D      _KLIBC_LOG_COLOR(_KLIBC_LOG_COLOR_GREEN)
+#define _KLIBC_LOG_COLOR_I
 #define _KLIBC_LOG_COLOR_V
 
 #define _KLIBC_LOG_FORMAT(letter, format)                                                                              \
@@ -99,10 +101,12 @@ typedef int (*printf_func)(const char *format, ...);
         if (level <= KLIBC_LOG_DEBUG) {                                                                                \
             if (level == KLIBC_LOG_ERROR) {                                                                            \
                 _KLIBC_LOG_ERROR(_KLIBC_LOG_FORMAT(E, format), _g_get_timestamp(), TAG, ##__VA_ARGS__);                \
+            } else if (level == KLIBC_LOG_WARNING) {                                                                   \
+                _KLIBC_LOG_ERROR(_KLIBC_LOG_FORMAT(W, format), _g_get_timestamp(), TAG, ##__VA_ARGS__);                \
             } else if (level == KLIBC_LOG_INFO) {                                                                      \
                 _KLIBC_LOG_INFO(_KLIBC_LOG_FORMAT(I, format), _g_get_timestamp(), TAG, ##__VA_ARGS__);                 \
             } else {                                                                                                   \
-                _KLIBC_LOG_DEBUG(_KLIBC_LOG_FORMAT(I, format), _g_get_timestamp(), TAG, ##__VA_ARGS__);                \
+                _KLIBC_LOG_DEBUG(_KLIBC_LOG_FORMAT(D, format), _g_get_timestamp(), TAG, ##__VA_ARGS__);                \
             }                                                                                                          \
         }                                                                                                              \
     }

@@ -40,8 +40,8 @@ void _klibc_log_hexdump(const char *title, uint32_t ts, const char *tag, const u
     }
     _g_b_printf_busy = true;
 
-    _KLIBC_LOG_INFO_NO_LOCK(_KLIBC_LOG_FORMAT(I, "%s, length=0x%" PRIxMAX "(%" PRIdMAX ")"), ts, tag, title,
-                            n_bytes_buff, n_bytes_buff);
+    _KLIBC_LOG_INFO_NO_LOCK(_KLIBC_LOG_FORMAT(I, "%s, length=0x%" PRIx32 "(%" PRId32 ")"), ts, tag, title,
+                            CAST(n_bytes_buff, uint32_t), CAST(n_bytes_buff, uint32_t));
 
     for (; n_bytes_buff;) {
         n_bytes_dump = n_bytes_buff > N_BYTES_PER_LINE ? N_BYTES_PER_LINE : n_bytes_buff;
