@@ -113,8 +113,8 @@ typedef int (*printf_func)(const char *format, ...);
 #define _KLIBC_LOG_RESET_COLOR  "\033[m"
 #define _KLIBC_LOG_COLOR_E      _KLIBC_LOG_COLOR(_KLIBC_LOG_COLOR_RED)
 #define _KLIBC_LOG_COLOR_W      _KLIBC_LOG_COLOR(_KLIBC_LOG_COLOR_BROWN)
-#define _KLIBC_LOG_COLOR_I      _KLIBC_LOG_COLOR(_KLIBC_LOG_COLOR_GREEN)
-#define _KLIBC_LOG_COLOR_D
+#define _KLIBC_LOG_COLOR_D      _KLIBC_LOG_COLOR(_KLIBC_LOG_COLOR_GREEN)
+#define _KLIBC_LOG_COLOR_I
 #define _KLIBC_LOG_COLOR_V
 
 #define _KLIBC_LOG_FORMAT(letter, format)                                                                              \
