@@ -6,20 +6,28 @@
 
 #pragma once
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
 #define _KLIBC_LOG_LEVEL_ERROR    0
-#define _KLIBC_LOG_LEVEL_INFO     1
-#define _KLIBC_LOG_LEVEL_DEBUG    2
-#define _KLIBC_LOG_LEVEL_DEBUGNTS 3
-#define _KLIBC_LOG_LEVEL_ALL      4
+#define _KLIBC_LOG_LEVEL_WARNING  1
+#define _KLIBC_LOG_LEVEL_INFO     2
+#define _KLIBC_LOG_LEVEL_DEBUG    3
+#define _KLIBC_LOG_LEVEL_VERBOSE  4
+#define _KLIBC_LOG_LEVEL_DEBUGNTS 5
+#define _KLIBC_LOG_LEVEL_ALL      6
 
 typedef enum klibc_log_level {
     KLIBC_LOG_ERROR    = _KLIBC_LOG_LEVEL_ERROR,
+    KLIBC_LOG_WARNING  = _KLIBC_LOG_LEVEL_WARNING,
     KLIBC_LOG_INFO     = _KLIBC_LOG_LEVEL_INFO,
     KLIBC_LOG_DEBUG    = _KLIBC_LOG_LEVEL_DEBUG,
+    KLIBC_LOG_VERBOSE  = _KLIBC_LOG_LEVEL_VERBOSE,
     KLIBC_LOG_DEBUGNTS = _KLIBC_LOG_LEVEL_DEBUGNTS,
     KLIBC_LOG_ALL      = _KLIBC_LOG_LEVEL_ALL,
 } klibc_log_level_t;
@@ -99,22 +107,50 @@ typedef int (*printf_func)(const char *format, ...);
         if (level <= KLIBC_LOG_DEBUG) {                                                                                \
             if (level == KLIBC_LOG_ERROR) {                                                                            \
                 _KLIBC_LOG_ERROR(_KLIBC_LOG_FORMAT(E, format), _g_get_timestamp(), TAG, ##__VA_ARGS__);                \
+            } else if (level == KLIBC_LOG_WARNING) {                                                                   \
+                _KLIBC_LOG_INFO(_KLIBC_LOG_FORMAT(W, format), _g_get_timestamp(), TAG, ##__VA_ARGS__);                 \
             } else if (level == KLIBC_LOG_INFO) {                                                                      \
                 _KLIBC_LOG_INFO(_KLIBC_LOG_FORMAT(I, format), _g_get_timestamp(), TAG, ##__VA_ARGS__);                 \
             } else {                                                                                                   \
-                _KLIBC_LOG_DEBUG(_KLIBC_LOG_FORMAT(I, format), _g_get_timestamp(), TAG, ##__VA_ARGS__);                \
+                _KLIBC_LOG_DEBUG(_KLIBC_LOG_FORMAT(D, format), _g_get_timestamp(), TAG, ##__VA_ARGS__);                \
             }                                                                                                          \
         }                                                                                                              \
     }
 
+#define KLIBC_LOGV(format, ...) KLIBC_LOG_PRINTF(KLIBC_LOG_VERBOSE, ##__VA_ARGS__)
+#define KLIBC_LOGD(format, ...) KLIBC_LOG_PRINTF(KLIBC_LOG_DEBUG, ##__VA_ARGS__)
+#define KLIBC_LOGI(format, ...) KLIBC_LOG_PRINTF(KLIBC_LOG_INFO, ##__VA_ARGS__)
+#define KLIBC_LOGW(format, ...) KLIBC_LOG_PRINTF(KLIBC_LOG_WARNING, ##__VA_ARGS__)
+#define KLIBC_LOGE(format, ...) KLIBC_LOG_PRINTF(KLIBC_LOG_ERROR, ##__VA_ARGS__)
+
 #define KLIBC_LOG_HEXDUMP(level, title, buff, n_bytes_buff)                                                            \
     _klibc_log_hexdump(title, _g_get_timestamp(), TAG, buff, n_bytes_buff)
 
+#ifdef _WIN32
+#define KLIBC_LOG_INIT(get_timestamp_function, printf_function)                                                        \
+    {                                                                                                                  \
+        _g_get_timestamp = get_timestamp_function;                                                                     \
+        _g_printf        = printf_function;                                                                            \
+        InitializeCriticalSection(&_g_critical_section);                                                               \
+    }
+#define KLIBC_LOG_DEINIT()                                                                                             \
+    {                                                                                                                  \
+        _g_get_timestamp = NULL;                                                                                       \
+        _g_printf        = NULL;                                                                                       \
+        DeleteCriticalSection(&_g_critical_section);                                                                   \
+    }
+#else
 #define KLIBC_LOG_INIT(get_timestamp_function, printf_function)                                                        \
     {                                                                                                                  \
         _g_get_timestamp = get_timestamp_function;                                                                     \
         _g_printf        = printf_function;                                                                            \
     }
+#define KLIBC_LOG_DEINIT()                                                                                             \
+    {                                                                                                                  \
+        _g_get_timestamp = NULL;                                                                                       \
+        _g_printf        = NULL;                                                                                       \
+    }
+#endif
 
 #if defined(__GNUC__) && __GNUC__ >= 7
 #define ATTRIBUTE_FALLTHROUGH __attribute__((fallthrough))
@@ -122,13 +158,17 @@ typedef int (*printf_func)(const char *format, ...);
 #define ATTRIBUTE_FALLTHROUGH ((void)0)
 #endif
 
-extern bool               _g_b_printf_busy;
-extern get_timestamp_func _g_get_timestamp;
-extern printf_func        _g_printf;
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#ifdef _WIN32
+extern CRITICAL_SECTION _g_critical_section;
+#endif
+
+extern bool               _g_b_printf_busy;
+extern get_timestamp_func _g_get_timestamp;
+extern printf_func        _g_printf;
 
 /**
  * @brief

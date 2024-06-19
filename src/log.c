@@ -6,12 +6,20 @@
 
 #include "klibc/log.h"
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 #include <ctype.h>
 #include <stdbool.h>
 
 #include "klibc/macro.h"
 
 #define N_BYTES_PER_LINE 16
+
+#ifdef _WIN32
+CRITICAL_SECTION _g_critical_section;
+#endif
 
 bool               _g_b_printf_busy = false;
 get_timestamp_func _g_get_timestamp = NULL;
@@ -36,8 +44,13 @@ void _klibc_log_hexdump(const char *title, uint32_t ts, const char *tag, const u
     char          DEREF(ptr)                                          = NULL;
     uint8_t       value                                               = 0;
 
+#ifdef _WIN32
+    EnterCriticalSection(REF(_g_critical_section));
+#else
     for (; _g_b_printf_busy;) {
     }
+#endif
+
     _g_b_printf_busy = true;
 
     _KLIBC_LOG_INFO_NO_LOCK(_KLIBC_LOG_FORMAT(I, "%s, length=0x%" PRIxMAX "(%" PRIdMAX ")"), ts, tag, title,
@@ -78,4 +91,9 @@ void _klibc_log_hexdump(const char *title, uint32_t ts, const char *tag, const u
     }
 
     _g_b_printf_busy = false;
+
+#ifdef _WIN32
+    LeaveCriticalSection(REF(_g_critical_section));
+#else
+#endif
 }
