@@ -39,37 +39,49 @@ typedef int (*printf_func)(const char *format, ...);
 #define KLIBC_LOG_MAX_LEVEL KLIBC_LOG_ALL
 
 #ifdef KLIBC_LOG_LEVEL_ALL
-#define KLIBC_LOG_LEVEL KLIBC_LOG_ALL
+#define KLIBC_LOG_LEVEL _KLIBC_LOG_LEVEL_ALL
 #endif
 
 #ifdef KLIBC_LOG_LEVEL_ERROR
-#define KLIBC_LOG_LEVEL KLIBC_LOG_ERROR
+#define KLIBC_LOG_LEVEL _KLIBC_LOG_LEVEL_ERROR
 #endif
 
 #ifdef KLIBC_LOG_LEVEL_INFO
-#define KLIBC_LOG_LEVEL KLIBC_LOG_INFO
+#define KLIBC_LOG_LEVEL _KLIBC_LOG_LEVEL_INFO
 #endif
 
 #ifndef KLIBC_LOG_LEVEL
-#define KLIBC_LOG_LEVEL KLIBC_LOG_ALL
+#define KLIBC_LOG_LEVEL _KLIBC_LOG_LEVEL_ALL
 #endif
 
-#define _KLIBC_LOG_PRINTF(fmt, ...)                                                                                    \
+#ifdef _WIN32
+#define LOCK()   EnterCriticalSection(REF(_g_critical_section));
+#define UNLOCK() LeaveCriticalSection(REF(_g_critical_section));
+#else
+#define LOCK()                                                                                                         \
     {                                                                                                                  \
         for (; _g_b_printf_busy;) {                                                                                    \
         }                                                                                                              \
         _g_b_printf_busy = true;                                                                                       \
+    }
+#define UNLOCK()                                                                                                       \
+    { _g_b_printf_busy = false }
+#endif
+
+#define _KLIBC_LOG_PRINTF(fmt, ...)                                                                                    \
+    {                                                                                                                  \
+        LOCK();                                                                                                        \
         _g_printf(fmt, ##__VA_ARGS__);                                                                                 \
-        _g_b_printf_busy = false;                                                                                      \
+        UNLOCK();                                                                                                      \
     }
 
-#if KLIBC_LOG_LEVEL <= KLIBC_LOG_LEVEL_ALL && KLIBC_LOG_LEVEL >= KLIBC_LOG_LEVEL_DEBUG
+#if KLIBC_LOG_LEVEL <= _KLIBC_LOG_LEVEL_ALL && KLIBC_LOG_LEVEL >= _KLIBC_LOG_LEVEL_DEBUG
 #define _KLIBC_LOG_DEBUG(fmt, ...) _KLIBC_LOG_PRINTF(fmt, ##__VA_ARGS__)
 #else
 #define _KLIBC_LOG_DEBUG(fmt, ...)
 #endif
 
-#if KLIBC_LOG_LEVEL <= KLIBC_LOG_LEVEL_ALL && KLIBC_LOG_LEVEL >= KLIBC_LOG_LEVEL_INFO
+#if KLIBC_LOG_LEVEL <= _KLIBC_LOG_LEVEL_ALL && KLIBC_LOG_LEVEL >= _KLIBC_LOG_LEVEL_INFO
 #define _KLIBC_LOG_INFO(fmt, ...)         _KLIBC_LOG_PRINTF(fmt, ##__VA_ARGS__)
 #define _KLIBC_LOG_INFO_NO_LOCK(fmt, ...) _g_printf(fmt, ##__VA_ARGS__)
 #else
@@ -77,7 +89,13 @@ typedef int (*printf_func)(const char *format, ...);
 #define _KLIBC_LOG_INFO_NO_LOCK(fmt, ...)
 #endif
 
-#if KLIBC_LOG_LEVEL <= KLIBC_LOG_LEVEL_ALL && KLIBC_LOG_LEVEL >= KLIBC_LOG_LEVEL_ERROR
+#if KLIBC_LOG_LEVEL <= _KLIBC_LOG_LEVEL_ALL && KLIBC_LOG_LEVEL >= _KLIBC_LOG_LEVEL_WARNING
+#define _KLIBC_LOG_WARNING(fmt, ...) _KLIBC_LOG_PRINTF(fmt, ##__VA_ARGS__)
+#else
+#define _KLIBC_LOG_WARNING(fmt, ...)
+#endif
+
+#if KLIBC_LOG_LEVEL <= _KLIBC_LOG_LEVEL_ALL && KLIBC_LOG_LEVEL >= _KLIBC_LOG_LEVEL_ERROR
 #define _KLIBC_LOG_ERROR(fmt, ...) _KLIBC_LOG_PRINTF(fmt, ##__VA_ARGS__)
 #else
 #define _KLIBC_LOG_ERROR(fmt, ...)
@@ -102,26 +120,11 @@ typedef int (*printf_func)(const char *format, ...);
 #define _KLIBC_LOG_FORMAT(letter, format)                                                                              \
     _KLIBC_LOG_COLOR_##letter #letter " (%" PRIu32 ") %s: " format _KLIBC_LOG_RESET_COLOR "\n"
 
-#define KLIBC_LOG_PRINTF(level, format, ...)                                                                           \
-    {                                                                                                                  \
-        if (level <= KLIBC_LOG_DEBUG) {                                                                                \
-            if (level == KLIBC_LOG_ERROR) {                                                                            \
-                _KLIBC_LOG_ERROR(_KLIBC_LOG_FORMAT(E, format), _g_get_timestamp(), TAG, ##__VA_ARGS__);                \
-            } else if (level == KLIBC_LOG_WARNING) {                                                                   \
-                _KLIBC_LOG_INFO(_KLIBC_LOG_FORMAT(W, format), _g_get_timestamp(), TAG, ##__VA_ARGS__);                 \
-            } else if (level == KLIBC_LOG_INFO) {                                                                      \
-                _KLIBC_LOG_INFO(_KLIBC_LOG_FORMAT(I, format), _g_get_timestamp(), TAG, ##__VA_ARGS__);                 \
-            } else {                                                                                                   \
-                _KLIBC_LOG_DEBUG(_KLIBC_LOG_FORMAT(D, format), _g_get_timestamp(), TAG, ##__VA_ARGS__);                \
-            }                                                                                                          \
-        }                                                                                                              \
-    }
-
-#define KLIBC_LOGV(format, ...) KLIBC_LOG_PRINTF(KLIBC_LOG_VERBOSE, ##__VA_ARGS__)
-#define KLIBC_LOGD(format, ...) KLIBC_LOG_PRINTF(KLIBC_LOG_DEBUG, ##__VA_ARGS__)
-#define KLIBC_LOGI(format, ...) KLIBC_LOG_PRINTF(KLIBC_LOG_INFO, ##__VA_ARGS__)
-#define KLIBC_LOGW(format, ...) KLIBC_LOG_PRINTF(KLIBC_LOG_WARNING, ##__VA_ARGS__)
-#define KLIBC_LOGE(format, ...) KLIBC_LOG_PRINTF(KLIBC_LOG_ERROR, ##__VA_ARGS__)
+#define KLIBC_LOGV(format, ...) _KLIBC_LOG_DEBUG(_KLIBC_LOG_FORMAT(V, format), _g_get_timestamp(), TAG, ##__VA_ARGS__)
+#define KLIBC_LOGD(format, ...) _KLIBC_LOG_DEBUG(_KLIBC_LOG_FORMAT(D, format), _g_get_timestamp(), TAG, ##__VA_ARGS__)
+#define KLIBC_LOGI(format, ...) _KLIBC_LOG_INFO(_KLIBC_LOG_FORMAT(I, format), _g_get_timestamp(), TAG, ##__VA_ARGS__)
+#define KLIBC_LOGW(format, ...) _KLIBC_LOG_INFO(_KLIBC_LOG_FORMAT(W, format), _g_get_timestamp(), TAG, ##__VA_ARGS__)
+#define KLIBC_LOGE(format, ...) _KLIBC_LOG_ERROR(_KLIBC_LOG_FORMAT(E, format), _g_get_timestamp(), TAG, ##__VA_ARGS__)
 
 #define KLIBC_LOG_HEXDUMP(level, title, buff, n_bytes_buff)                                                            \
     _klibc_log_hexdump(title, _g_get_timestamp(), TAG, buff, n_bytes_buff)
