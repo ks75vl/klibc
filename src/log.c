@@ -77,7 +77,7 @@ void _klibc_log_hexdump(const char *title, uint32_t ts, const char *tag, const u
         }
         ptr = SET_UINT8(ptr, 0x7c);
 
-        _KLIBC_LOG_INFO_NO_LOCK(_KLIBC_LOG_FORMAT(I, "|  %s"), ts, tag, hex);
+        _g_printf(_KLIBC_LOG_FORMAT(I, "|  %s"), ts, tag, hex);
 
         buff += n_bytes_dump;
         n_bytes_buff -= n_bytes_dump;
