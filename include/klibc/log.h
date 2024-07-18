@@ -65,7 +65,7 @@ typedef int (*printf_func)(const char *format, ...);
         _g_b_printf_busy = true;                                                                                       \
     }
 #define UNLOCK()                                                                                                       \
-    { _g_b_printf_busy = false }
+    { _g_b_printf_busy = false; }
 #endif
 
 #define _KLIBC_LOG_PRINTF(fmt, ...)                                                                                    \
