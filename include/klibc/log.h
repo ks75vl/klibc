@@ -126,6 +126,12 @@ typedef int (*printf_func)(const char *format, ...);
 #define KLIBC_LOGW(format, ...) _KLIBC_LOG_INFO(_KLIBC_LOG_FORMAT(W, format), _g_get_timestamp(), TAG, ##__VA_ARGS__)
 #define KLIBC_LOGE(format, ...) _KLIBC_LOG_ERROR(_KLIBC_LOG_FORMAT(E, format), _g_get_timestamp(), TAG, ##__VA_ARGS__)
 
+#define LOGV(format, ...) KLIBC_LOGV(format, ##__VA_ARGS__)
+#define LOGD(format, ...) KLIBC_LOGD(format, ##__VA_ARGS__)
+#define LOGI(format, ...) KLIBC_LOGI(format, ##__VA_ARGS__)
+#define LOGW(format, ...) KLIBC_LOGW(format, ##__VA_ARGS__)
+#define LOGE(format, ...) KLIBC_LOGE(format, ##__VA_ARGS__)
+
 #define KLIBC_LOG_HEXDUMP(level, title, buff, n_bytes_buff)                                                            \
     _klibc_log_hexdump(title, _g_get_timestamp(), TAG, buff, n_bytes_buff)
 
@@ -154,6 +160,9 @@ typedef int (*printf_func)(const char *format, ...);
         _g_printf        = NULL;                                                                                       \
     }
 #endif
+
+#define LOG_INIT(get_timestamp_function, printf_function) KLIBC_LOG_INIT(get_timestamp_function, printf_function)
+#define LOG_DEINIT() KLIBC_LOG_DEINIT()
 
 #if defined(__GNUC__) && __GNUC__ >= 7
 #define ATTRIBUTE_FALLTHROUGH __attribute__((fallthrough))
